@@ -1,0 +1,161 @@
+---
+title: "Introducción a R"
+author: "Samuel Romano   165167"
+output:
+  html_document:
+    theme: spacelab
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Descarga los datos de la siguiente [liga](https://www.kaggle.com/datasets/jackdaoud/marketing-data/versions/3?resource=download):
+
+
+```{r}
+#Carga de base en dataframe para posteriormente manipularlo
+getwd()
+library(readxl)
+library(dplyr)
+library(ggplot2)
+
+df<- read_excel("ifood_df.xls")
+print(df)
+````
+
+* Entienda los datos, explique brevemente las variables:  
+
+*La base de datos con la que se trabajará contiene información sobre una compañía que se dedica a la venta de ciertos productos. Ésta tiene datos relacionados con las ventas y preferencias de los clientes, así como de los consumidores mismos. Tal es el caso, que algunas de las variables nos indican desde hace cuántos días cada consumidor se volvió miembro de la compañía- es decir, que comenzó a comprar con ellos-, la cantidad de dinero que gasta cada uno en cierto tipo de productos, el número de veces que ha comprado en cada uno de los canales que ofrece la compañía (catálogo, directo en tienda física, a través de la página web, etc.), así como si los clientes compraron después de haber visto una de las campañas de publicidad de la empresa en donde se ofrecía algún tipo de oferta. *   
+
+*Por otro lado, dentro de la misma base también se incluye información de los clientes, como por ejemplo su edad, el ingreso en el hogar de manera anual, el número de niños y/o adolescentes que viven con los compradores, y su estado civil, por mencionar algunas.*  
+
+*Las variables descritas anteriormente permiten a la empresa en cuestión poder conocer de mejor manera a sus clientes y sus comportamientos con respecto a las compras que realizan. Con esto, pueden resultar mejores resultados en términos de ventas e ingresos para la compañía por lanzamientos más dirigidos de campañas publicitarias, al mismo tiempo que aprenden a clasificar a sus clientes por sus hábitos de compra y más variables para que estos sientan atención más personalizada y ofertas que se adecuen mejor con su estilo de vida. *
+
+
+* ¿Cuáles son las preguntas que le vienen a responder para describir el fenómeno descrito?  
+
+*1. ¿Cuáles son los tipos de producto en el que más y en el que menos gastan dinero nuestros clientes?*  
+*2. ¿A través de qué canales tenemos mayores y menores ventas?*  
+*3. ¿Qué tipo de productos prefiere la gente comprar en línea por conveniencia?*  
+*4. ¿Qué nivel de educación tienen los clientes que más ingreso tienen?*  
+*5. ¿Cuántos días en promedio han pasado sin comprar aquellos clientes que han presentado quejas en los últimos 2 años?*  
+*6. ¿Cuál es el estado civil de aquellas personas que consumen más vino?*   
+*7. De aquellos clientes que más han comprado con descuentos, ¿se ha debido a la aceptación de algún tipo de campaña?*  
+*8. ¿Qué rango de edad tienen las personas que más compran directamente en tienda física?*  
+*9. ¿Qué campaña ha sido la que mejor respuesta tuvo, con la finalidad de poder replicarla y mejorarla?*  
+*10. De aquellos clientes con niños y/o adolescentes, ¿qué proporción del ingreso anual han gastado en los últimos dos años en productos dulces?*  
+*11. ¿Los clientes que más visitas hacen a la página web son quienes más compran por ese canal?*  
+*12. ¿Los clientes más antiguos continúan comprando recurrentemente?*  
+*13. ¿Qué clientes son los que más gastan? (¿Con niños pequeños, con adolescentes o sólos?)*  
+*14. ¿Qué tipo de productos suelen comprar más los clientes de acuerdo con su estado civil?*  
+*15. ¿Cuál es el ingreso anual y gasto total en los últimos 2 años promedio de los clientes de acuerdo con su nivel de educación?*  
+
+
+* Con esas preguntas elija las 5 más interesantes y genere las tablas que respondan las preguntas.
+
+````{r}
+#Pregunta 1. ¿Cuáles son los tipos de producto en el que más y en el que menos gastan dinero nuestros clientes?
+
+names(df)
+
+P1<- data.frame(
+  "Productos"=c("Wines","Fruits","Meat","Fish","Sweet","Gold"),
+  "Total"=c(sum(df$MntWines),sum(df$MntFruits),sum(df$MntMeatProducts),sum(df$MntFishProducts),sum(df$MntSweetProducts),sum(df$MntGoldProds))
+)
+print(P1)
+
+P1[which.max(P1$Total),1]
+P1[which.min(P1$Total),1]
+
+
+````
+- En el chunk anterior se creó un dataframe auxiliar proveniente de nuestra base de datos original con el monto total gastado por los consumidores en cada uno de los tipos de productos que se venden. Con esto, pudimos determinar que la categoría de **Vinos** es lo que **más se vende** en términos de dinero y la categoría de **Frutas** lo que **menos**. 
+
+````{r}
+#Pregunta2. ¿A través de qué canales tenemos mayores y menores ventas?
+
+P2<- data.frame(
+  "Canal"=c("Web","Catalog","Store"),
+  "NumCompras"=c(sum(df$NumWebPurchases),sum(df$NumCatalogPurchases),sum(df$NumStorePurchases))
+)
+print(P2)
+
+P2[which.max(P2$NumCompras),1]
+P2[which.min(P2$NumCompras),1]
+
+````
+- En el chunk previo, se creó también un dataframe auxiliar con el número de compras por canal de venta que ofrece la compañía. 
+El resultado de esto fue que el canal de la **tienda física** presenta mucho mayores ventas, siendo el canal que menos presentó fue el del **Catálogo**. Con este resultado, se pueden tomar acciones para impulsar las ventas por catálogo o dedicar campañas completas a este canal para abarcar éste en una mayor proporción que la que se tiene actualmente. 
+
+
+````{r}
+#Pregunta 7. De aquellos clientes que más han comprado con descuentos, ¿se ha debido a la aceptación de algún tipo de campaña?
+
+df7<-filter(df,NumDealsPurchases>=7) %>%
+  select(NumDealsPurchases,AcceptedCmpOverall,Response) %>%
+  arrange(NumDealsPurchases) %>%
+  mutate(
+    TotCamp = AcceptedCmpOverall+Response
+  ) %>%
+  select(NumDealsPurchases,TotCamp)
+
+
+P7<- data.frame(
+  "ComprasDesc" = 7:15, 
+  "CampAcept" = c(sum(df7$TotCamp[df7$NumDealsPurchases==7]),sum(df7$TotCamp[df7$NumDealsPurchases==8]),sum(df7$TotCamp[df7$NumDealsPurchases==9]),sum(df7$TotCamp[df7$NumDealsPurchases==10]),sum(df7$TotCamp[df7$NumDealsPurchases==11]),sum(df7$TotCamp[df7$NumDealsPurchases==12]),sum(df7$TotCamp[df7$NumDealsPurchases==13]),sum(df7$TotCamp[df7$NumDealsPurchases==14]),sum(df7$TotCamp[df7$NumDealsPurchases==15]))
+)
+
+#Porcentaje de campañas aceptadas con 7+ compras con descuentos sobre el total de campañas aceptadas
+sum(P7$CampAcept)/(sum(df$Response)+sum(df$AcceptedCmpOverall))*100
+
+`````
+* Con los resultados anteriores, podemos concluir que de todos aquellos clientes que han hecho 7 o más compras con descuentos, estos no  se han visto influenciados por las campañas publicitarias. Esto lo podemos ver a través de la tabla resumen en donde se presentan el número de ofertas que se han aceptado de las 6 campañas por número de compras con descuentos. Si hacemos la suma de aceptaciones del $P7$, obtenemos como resultado que estos clientes aceptaron únicamente 35 ofertas de las 993 que se han aceptado en total. Esto representa únicamente el $3.52$% de las ofertas; por tanto, las campañas no influencían el número de compras con descuentos que se hacen, por lo que podríamos concluir que las campañas no son lo suficientemente atractivas para que los clientes tomen estos descuentos. 
+
+````{r}
+#Pregunta 12. ¿Los clientes más antiguos continúan comprando recurrentemente?
+
+P12<- filter(df,Customer_Days>mean(df$Customer_Days)) %>%
+  select(Customer_Days,Recency) %>%
+  mutate(
+    Customer_Years = Customer_Days/365 
+  ) %>%
+  arrange(desc(Customer_Years)) %>%
+  select(Customer_Years, Recency)
+
+#Promedio de Recency total
+mean(df$Recency)
+
+mean(P12$Recency)>mean(P12$Recency)
+
+````
+* Todos los clientes de nuestra base de datos original se han vuelto miembros o compradores de la empresa en cuestión desde hace 6.88 años en promedio. Con el creación de la tabla anterior, podemos observar que aquellos clientes que se volvieron miembros desde hace más que este promedio (es decir, los clientes más antiguos) tienden a dejar de comprar en la empresa en promedio por casi 50 días. Este resultado es mayor que el promedio general de días que todos los clientes dejan de comprar; lo cual implica que no existe una lealtad por parte de nuestros clientes más antiguos. Por tanto, se debe de trabajar en ofrecer programas de lealtad a todos los clientes, pero haciendo más énfasis en aquellos que se inscribieron con nosotros desde hace más tiempo. Esto, con la finalidad de que prácticamente todas sus compras las hagan en nuestra empresa sabiendo que pueden obtener alguna clase de beneficio, como por ejemplo un programa de puntos o uno de recompensas por compras acumuladas en un período de tiempo y, en caso de que se tenga un período de inactividad muy grande, se pierdan dichos puntos o beneficios acumulados.
+
+````{r}
+#Pregunta 13. ¿Qué clientes son los que más gastan? ¿Con niños pequeños y/o adolescentes o sin hijos?)
+
+df13h<- filter(df,Kidhome>0 | Teenhome>0) %>%
+  select(Kidhome,Teenhome,MntTotal) %>% 
+  mutate(
+    Children = Kidhome + Teenhome
+  ) %>%
+  select(Children,MntTotal)
+
+df13nh<- filter(df,Kidhome==0 & Teenhome==0) %>%
+  rename(Children=Kidhome) %>%
+  select(Children,MntTotal) 
+
+P13<- data.frame(
+  "Children" = 0:3, 
+  "NumClients" = c(nrow(df13nh),sum(df13h$Children==1),sum(df13h$Children==2),sum(df13h$Children==3)), 
+  "MntTotal" = c(sum(df13nh$MntTotal),sum(df13h$MntTotal[df13h$Children==1]),sum(df13h$MntTotal[df13h$Children==2]),sum(df13h$MntTotal[df13h$Children==3]))
+)
+
+P13 <- mutate(P13,
+  MntxClient = MntTotal/NumClients
+)
+print(P13)
+
+````
+* El dataframe generado anteriormente nos indica el monto que gasta en promedio cada cliente en esta empresa de manera bi-anual, de acuerdo con el número de hijos/infantes que viven con ellos. De manera general, considero que cualquier persona pensaría que entre más dependientes o personas viven en un hogar, su gasto promedio debe ser mayor simplemente porque el número de personas a alimentar es mayor. No obstante, en este ejemplo podemos observar que aquellos clientes que no tienen hijos son quienes gastan considerablemente más de manera bi-anual que aquellos con hijos. Incluso, algo sorprendente es que un cliente sin hijos gasta más que un cliente con 1 hijo, un cliente con 2 y un cliente con 3 de manera conjunta. 
